@@ -10,7 +10,8 @@ type App struct {
 
 	mainGrid *tview.Grid
 
-	urlInput *tview.InputField
+	urlInput    *tview.InputField
+	releaseView *tview.TreeView
 }
 
 func New() *App {
@@ -19,8 +20,10 @@ func New() *App {
 	}
 
 	a.buildUI()
-	// a.bindEvents()
+	a.bindEvents()
 	// a.initInputCapture()
+
+	a.app.EnableMouse(true)
 
 	return a
 }

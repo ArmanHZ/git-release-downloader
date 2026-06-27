@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -12,7 +13,8 @@ func (a *App) buildHeader() *tview.Frame {
 
 	a.urlInput = tview.NewInputField().
 		SetLabel("GitHub URL: ").
-		SetPlaceholder("https://github.com/owner/repo")
+		SetPlaceholder("https://github.com/owner/repo").
+		SetText("https://github.com/peass-ng/PEASS-ng")
 
 	grid.AddItem(a.urlInput, 1, 1, 1, 1, 0, 0, true)
 
@@ -26,6 +28,13 @@ func (a *App) buildMainBody() *tview.Frame {
 		SetRows(1, 0, 1).
 		SetColumns(2, 0, 2)
 
+	rootNode := tview.NewTreeNode("[::b]Releases[-]").
+		SetColor(tcell.ColorBlue)
+	a.releaseView = tview.NewTreeView().
+		SetRoot(rootNode)
+
+	grid.AddItem(a.releaseView, 1, 1, 1, 1, 0, 0, true)
+
 	return tview.NewFrame(grid).SetBorders(0, 0, 1, 1, 2, 2)
 }
 
@@ -37,6 +46,9 @@ func (a *App) buildUI() {
 
 	header := a.buildHeader()
 	a.mainGrid.AddItem(header, 0, 0, 1, 1, 0, 0, true)
+
+	mainBody := a.buildMainBody()
+	a.mainGrid.AddItem(mainBody, 1, 0, 1, 1, 0, 0, true)
 
 	a.app.SetRoot(a.mainGrid, true)
 }
