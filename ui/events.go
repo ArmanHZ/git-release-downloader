@@ -11,50 +11,16 @@ import (
 	"github.com/rivo/tview"
 )
 
-func (a *App) focusNext(focusables []tview.Primitive, focusIndex *int) {
-	if len(focusables) == 0 {
-		return
-	}
-
-	*focusIndex = (*focusIndex + 1) % len(focusables)
-	a.app.SetFocus(focusables[*focusIndex])
-}
-
-func (a *App) focusPrev(focusables []tview.Primitive, focusIndex *int) {
-	if len(focusables) == 0 {
-		return
-	}
-
-	*focusIndex--
-	if *focusIndex < 0 {
-		*focusIndex = len(focusables) - 1
-	}
-
-	a.app.SetFocus(focusables[*focusIndex])
-}
-
 func (a *App) initInputCapture() {
 	a.app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if !a.isModalActive {
-			switch event.Key() {
-			case tcell.KeyTab:
-				a.focusNext(a.focusables, &a.focusIndex)
-				return nil
+		switch event.Key() {
+		case tcell.KeyTab:
+			a.activeFocus.Next(a.app)
+			return nil
 
-			case tcell.KeyBacktab:
-				a.focusPrev(a.focusables, &a.focusIndex)
-				return nil
-			}
-		} else {
-			switch event.Key() {
-			case tcell.KeyTab:
-				a.focusNext(a.modalFocusables, &a.modalFocusIndex)
-				return nil
-
-			case tcell.KeyBacktab:
-				a.focusPrev(a.modalFocusables, &a.modalFocusIndex)
-				return nil
-			}
+		case tcell.KeyBacktab:
+			a.activeFocus.Prev(a.app)
+			return nil
 		}
 
 		return event
@@ -139,9 +105,8 @@ func (a *App) urlAction() {
 				// TODO: Pop-up saying error or something.
 			} else {
 				a.populateReleaseTree(releases)
-				// XXX
-				a.focusIndex = int(ReleaseView)
-				a.app.SetFocus(a.focusables[a.focusIndex])
+				a.activeFocus.index = int(ReleaseView)
+				a.app.SetFocus(a.releaseView)
 			}
 		}
 	})

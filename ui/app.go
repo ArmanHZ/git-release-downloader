@@ -6,32 +6,17 @@ import (
 	"github.com/rivo/tview"
 )
 
-type FocusablePrimitives int
-
-// TODO FIXME: The order of these are kept manually for far. Need to research a good
-// way of autumating this part. Specially if we add more components.
-const (
-	UrlInput FocusablePrimitives = iota
-	DownloadButton
-	ReleaseView
-)
-
-const (
-	ModalWDInput FocusablePrimitives = iota
-	ModalCloseButton
-	ModalDownloadButton
-)
-
 type App struct {
 	app *tview.Application
 
-	focusables      []tview.Primitive
-	focusIndex      int
-	modalFocusables []tview.Primitive
-	modalFocusIndex int
+	mainFocus *FocusManager
+	// TODO: impl l8r
+	// repoSelectFocus *FocusManager
+	downloadModalFocus *FocusManager
 
-	downloadList  map[utils.Asset][]string // FIXME: I mean, we're only using the key value.
-	isModalActive bool
+	activeFocus *FocusManager
+
+	downloadList map[utils.Asset][]string // FIXME: I mean, we're only using the key value.
 
 	mainGrid *tview.Grid
 
@@ -49,9 +34,7 @@ func New() *App {
 	a.bindEvents()
 	a.initInputCapture()
 
-	// a.app.SetFocus(a.focusables[0])
-	a.app.SetFocus(a.focusables[UrlInput])
-	a.isModalActive = false
+	a.app.SetFocus(a.urlInput)
 
 	return a
 }

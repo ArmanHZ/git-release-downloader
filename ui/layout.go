@@ -9,17 +9,13 @@ import (
 	"github.com/rivo/tview"
 )
 
-// TODO: Implement and refactor using this.
-func (a *App) resetFocus(toFocus int) {}
-
 // XXX: Maybe some parts of this function need to go to the events. But, I don't
 // want to globalize more variables. We'll see.
 // We could call this once and then use the reference to eliminate the modal focusables reset.
 func (a *App) buildDownloadPage() *tview.Frame {
 	// Reset the focusables each time, because the modal can be created multiple times.
-	a.modalFocusables = []tview.Primitive{}
-	a.modalFocusIndex = 0
-	a.isModalActive = true
+	a.downloadModalFocus = NewFocusManager()
+	a.activeFocus = a.downloadModalFocus
 
 	grid := tview.NewGrid().
 		SetRows(1, 0, 1).
@@ -30,7 +26,7 @@ func (a *App) buildDownloadPage() *tview.Frame {
 	fileSaveInput := tview.NewInputField().
 		SetLabel("Save location: ").
 		SetText(pwd)
-	a.modalFocusables = append(a.modalFocusables, fileSaveInput)
+	a.activeFocus.AddFocusable(fileSaveInput)
 
 	downloadList := tview.NewList().
 		SetSelectedBackgroundColor(tcell.ColorDefault).
@@ -44,11 +40,12 @@ func (a *App) buildDownloadPage() *tview.Frame {
 
 	closeModalButton := tview.NewButton("Cancel").
 		SetSelectedFunc(func() {
-			a.focusIndex = int(ReleaseView) // If the user clicks Cancel, most likely they'll select more files.
-			a.app.SetRoot(a.mainGrid, true).SetFocus(a.focusables[a.focusIndex])
-			a.isModalActive = false
+			a.activeFocus = a.mainFocus
+			// If the user presses cancel, they most likely want to select more releases.
+			a.activeFocus.index = int(ReleaseView)
+			a.app.SetRoot(a.mainGrid, true).SetFocus(a.releaseView)
 		})
-	a.modalFocusables = append(a.modalFocusables, closeModalButton)
+	a.activeFocus.AddFocusable(closeModalButton)
 
 	downloadButton := tview.NewButton("Download").
 		SetSelectedFunc(func() {
@@ -64,16 +61,17 @@ func (a *App) buildDownloadPage() *tview.Frame {
 					panic(err)
 				}
 
+				// TODO: Reset the download list and the ReleaseView colors.
+				a.activeFocus = a.mainFocus
+				a.activeFocus.index = int(UrlInput)
 				a.app.SetRoot(a.mainGrid, true)
-				a.focusIndex = int(UrlInput)
-				a.app.SetFocus(a.focusables[a.focusIndex])
-				a.isModalActive = false
+				a.app.SetFocus(a.urlInput)
 
 				a.app.Draw()
 			}()
 
 		})
-	a.modalFocusables = append(a.modalFocusables, downloadButton)
+	a.activeFocus.AddFocusable(downloadButton)
 
 	grid.AddItem(fileSaveInput, 0, 0, 1, 2, 0, 0, true).
 		AddItem(downloadList, 1, 0, 1, 2, 0, 0, false).
@@ -92,10 +90,10 @@ func (a *App) buildHeader() *tview.Frame {
 	a.urlInput = tview.NewInputField().
 		SetLabel("GitHub URL: ").
 		SetPlaceholder("https://github.com/owner/repo")
-	a.focusables = append(a.focusables, a.urlInput)
+	a.activeFocus.AddFocusable(a.urlInput)
 
 	a.downloadButton = tview.NewButton("Download Assets")
-	a.focusables = append(a.focusables, a.downloadButton)
+	a.activeFocus.AddFocusable(a.downloadButton)
 
 	grid.AddItem(a.urlInput, 0, 0, 1, 1, 0, 0, true).
 		AddItem(a.downloadButton, 2, 0, 1, 1, 0, 0, true)
@@ -114,7 +112,7 @@ func (a *App) buildMainBody() *tview.Frame {
 		SetColor(tcell.ColorBlue)
 	a.releaseView = tview.NewTreeView().
 		SetRoot(rootNode)
-	a.focusables = append(a.focusables, a.releaseView)
+	a.activeFocus.AddFocusable(a.releaseView)
 
 	grid.AddItem(a.releaseView, 0, 0, 1, 1, 0, 0, true)
 
@@ -126,6 +124,9 @@ func (a *App) buildUI() {
 		SetRows(5, 0).
 		SetColumns(0).
 		SetBorders(true)
+
+	a.mainFocus = NewFocusManager()
+	a.activeFocus = a.mainFocus
 
 	header := a.buildHeader()
 	a.mainGrid.AddItem(header, 0, 0, 1, 1, 0, 0, true)
